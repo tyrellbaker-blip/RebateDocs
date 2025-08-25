@@ -1,0 +1,10 @@
+<View>
+    <Image name="img" value="$image"/>
+    <Labels name="label" toName="img">
+        <Label value="Label"/>
+        <Label value="Amount"/>
+    </Labels>
+    <Relations>
+        <Relation value="label_of"/>
+    </Relations>
+</View>
