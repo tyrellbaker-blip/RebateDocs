@@ -571,11 +571,11 @@ def extract(doc_id: str, spans: List[Span], parser_name: str = "pdfplumber") -> 
 
     # ---------- NEW: stable grouping & ordering by program_id ----------
     def sort_key(kv: KV):
-        # None-safe guards for fields used in sorting
+        # Sort by page appearance order, then by program_id, then other fields
         pid = kv.program_id or ""
         return (
-            pid,
             (kv.page if kv.page is not None else 10**9),
+            pid,
             (kv.model_year if kv.model_year is not None else 0),
             (kv.model or ""),
             (kv.trim or ""),
