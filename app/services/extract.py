@@ -45,6 +45,7 @@ from collections import defaultdict
 from app.models.schemas import Span, KV, DocResult
 from extraction.patterns import LABEL_LEXICON, MONEY_REGEX, MODEL_KEYS, MODEL_NORMALIZER
 from app.util.layout import same_line  # imported for parity; not required in this implementation
+from app.util.logger import get_logger
 
 # ---------- regexes / helpers ----------
 
@@ -298,6 +299,8 @@ def parse_trim_and_amounts_from_line(t: str) -> Tuple[Optional[str], List[int]]:
 # ---------- main entry ----------
 
 def extract(doc_id: str, spans: List[Span], parser_name: str = "pdfplumber") -> DocResult:
+    logger = get_logger()
+    logger.info(f"Starting extraction for document: {doc_id} with {len(spans)} spans")
     # light classification (handy for debug)
     for s in spans:
         txt = s.text.strip()
@@ -557,6 +560,9 @@ def extract(doc_id: str, spans: List[Span], parser_name: str = "pdfplumber") -> 
         else:
             if kv.amount_dollars is not None:
                 filtered.append(kv)
+
+    logger.info(f"Extracted {len(filtered)} KV pairs from {len(kvs)} total candidates for document: {doc_id}")
+    logger.debug(f"Found {len(toc)} TOC entries and {len(programs_with_amounts)} programs with amounts")
 
     # Final sweep: never let model be 'Bonus' (belt-and-suspenders)
     for kv in filtered:

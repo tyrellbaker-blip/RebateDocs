@@ -31,8 +31,12 @@ from app.services.parse_pdf import parse_with_pdfplumber
 from app.services.extract import extract
 from app.services.validate import tighten
 from app.models.schemas import KV, DocResult
+from app.util.logger import setup_logger, get_logger
 
 # ---------------------------- Page setup ----------------------------
+
+# ---------------------------- Setup logging ----------------------------
+logger = setup_logger("streamlit_app", level="INFO", log_file="logs/streamlit_app.log")
 
 st.set_page_config(page_title="VW Rebate Extractor (Local)", layout="wide")
 st.title("VW Rebate Extractor (Local)")
@@ -121,24 +125,31 @@ def rows_to_dataframe(rows: List[Dict[str, Any]]) -> pd.DataFrame:
 results: List[DocResult] = []
 
 if run_btn and uploaded:
+    logger.info(f"Starting extraction process for {len(uploaded)} files")
     tmp_dir = ensure_tmp_dir()
 
     for uf in uploaded:
-        data = uf.read()
-        doc_id = f"{uf.name}-{file_hash(data)}"
-        tmp_path = tmp_dir / f"{doc_id}.pdf"
-        with open(tmp_path, "wb") as f:
-            f.write(data)
+        try:
+            logger.info(f"Processing file: {uf.name}")
+            data = uf.read()
+            doc_id = f"{uf.name}-{file_hash(data)}"
+            tmp_path = tmp_dir / f"{doc_id}.pdf"
+            with open(tmp_path, "wb") as f:
+                f.write(data)
 
-        spans = parse_with_pdfplumber(str(tmp_path))
-        doc = extract(doc_id, spans, parser_name="pdfplumber")
+            spans = parse_with_pdfplumber(str(tmp_path))
+            doc = extract(doc_id, spans, parser_name="pdfplumber")
 
-        doc.provenance["spans"] = spans
-        doc.provenance["parse_stats"] = {"pdfplumber_word_count": len(spans)}
+            doc.provenance["spans"] = spans
+            doc.provenance["parse_stats"] = {"pdfplumber_word_count": len(spans)}
 
-        # Collapse duplicates in this document
-        doc.kvs = tighten(doc.kvs)
-        results.append(doc)
+            # Collapse duplicates in this document
+            doc.kvs = tighten(doc.kvs)
+            results.append(doc)
+            logger.info(f"Successfully processed {uf.name} - extracted {len(doc.kvs)} unique rebates")
+        except Exception as e:
+            logger.error(f"Error processing file {uf.name}: {str(e)}")
+            st.error(f"Error processing {uf.name}: {str(e)}")
 
 # ---------------------------- Display results ----------------------------
 
