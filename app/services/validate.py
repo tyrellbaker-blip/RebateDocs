@@ -65,11 +65,13 @@ def tighten(kvs: List[KV]) -> List[KV]:
             best[key] = kv
 
     out = list(best.values())
+    # Sort by page appearance order first, then by other criteria for consistency
     out.sort(key=lambda k: (
-        _norm(k.rebate_type) or "",
-        _norm(k.published_date) or "",
-        -(k.model_year or 0),
-        _norm(k.model) or "",
-        -(k.amount_dollars or 0),
+        k.page if k.page is not None else 999999,  # Primary: page order
+        _norm(k.rebate_type) or "",                # Secondary: rebate type  
+        _norm(k.published_date) or "",             # Tertiary: published date
+        -(k.model_year or 0),                      # Fourth: model year (desc)
+        _norm(k.model) or "",                      # Fifth: model name
+        -(k.amount_dollars or 0),                  # Sixth: amount (desc)
     ))
     return out

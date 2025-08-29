@@ -569,12 +569,16 @@ def extract(doc_id: str, spans: List[Span], parser_name: str = "pdfplumber") -> 
         if kv.model and kv.model.lower() == "bonus":
             kv.model = "all"
 
-    # ---------- NEW: stable grouping & ordering by program_id ----------
+    # ---------- Sort by page appearance order ----------
     def sort_key(kv: KV):
-        # Sort by page appearance order, then by program_id, then other fields
+        # Primary sort: page number (ascending)
+        # Secondary sort: line position within page (if available)  
+        # Tertiary sort: program_id, model info for consistency
+        page_num = kv.page if kv.page is not None else 999999
         pid = kv.program_id or ""
+        
         return (
-            (kv.page if kv.page is not None else 10**9),
+            page_num,
             pid,
             (kv.model_year if kv.model_year is not None else 0),
             (kv.model or ""),
@@ -582,7 +586,15 @@ def extract(doc_id: str, spans: List[Span], parser_name: str = "pdfplumber") -> 
             (kv.amount_dollars if kv.amount_dollars is not None else 0),
         )
 
+    # Add comprehensive logging for debugging page order
+    all_pages = [kv.page for kv in filtered if kv.page is not None]
+    logger.info(f"Page distribution before sorting: {sorted(set(all_pages))}")
+    logger.debug(f"Before sorting (first 15): pages = {[kv.page for kv in filtered[:15]]}")
+    
     filtered.sort(key=sort_key)
+    
+    logger.debug(f"After sorting (first 15): pages = {[kv.page for kv in filtered[:15]]}")
+    logger.info(f"Sorting complete: {len(filtered)} KV pairs now ordered by page")
 
     # Build a groups index: program_id -> list of indices (into filtered)
     kv_groups: Dict[str, List[int]] = {}
