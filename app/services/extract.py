@@ -121,6 +121,20 @@ def iso_date_or_none(t: str) -> Optional[str]:
         mm_i = int(mm)
         dd_i = int(dd)
         y_i = int(yyyy)
+        
+        # Validate date ranges
+        if not (1 <= mm_i <= 12):
+            return None
+        if not (1 <= dd_i <= 31):
+            return None
+        if y_i < 1900 or y_i > 2100:
+            return None
+            
+        # Additional validation for days per month
+        import calendar
+        if dd_i > calendar.monthrange(y_i, mm_i)[1]:
+            return None
+            
         return f"{y_i:04d}-{mm_i:02d}-{dd_i:02d}"
     except Exception:
         return None
@@ -235,9 +249,27 @@ def parse_exclusions_from_text(t: str) -> Optional[str]:
 def is_label_text(t: str) -> Optional[str]:
     """Return a canonical label key if the line contains a known label/synonym."""
     low = t.lower().strip()
+    
+    # Check all keys and synonyms, sorted by specificity (length)
+    # This ensures longer, more specific matches take priority
+    all_matches = []
+    
+    # Add keys
+    for k in LABEL_LEXICON.keys():
+        all_matches.append((k, k))
+    
+    # Add synonyms
     for k, v in LABEL_LEXICON.items():
-        if k in low or any(s in low for s in v.get("syn", [])):
-            return k
+        for syn in v.get("syn", []):
+            all_matches.append((k, syn))
+    
+    # Sort by length of match string (descending) for specificity
+    all_matches.sort(key=lambda x: len(x[1]), reverse=True)
+    
+    for canonical_key, match_string in all_matches:
+        if match_string in low:
+            return canonical_key
+    
     return None
 
 

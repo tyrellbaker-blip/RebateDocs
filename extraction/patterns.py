@@ -41,8 +41,8 @@ LABEL_LEXICON = {
     "vfi program": {
         "syn": ["vfi program", "volkswagen fleet incentive", "fleet incentive", "dealer cash"]
     },
-    # Generic catch-all that still classifies content as “rebate”
-    "bonus": {"syn": ["bonus", "rebate", "customer rebate"]},
+    # Generic catch-all that still classifies content as "rebate" - keep synonyms minimal
+    "bonus": {"syn": ["rebate"]},
 }
 
 # Normalize model strings → canonical display form
