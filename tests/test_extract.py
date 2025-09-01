@@ -224,19 +224,71 @@ class TestParseExclusionsFromText:
         """Test parsing exclusions in parentheses."""
         text = "Tiguan $1,500 (excludes base trim)"
         result = parse_exclusions_from_text(text)
-        assert result == "(excludes base trim)"
+        assert result == "base trim"
     
     def test_parse_trailing_exclusions(self):
         """Test parsing trailing exclusions."""
         text = "Atlas $2,000 excludes SE trim"
         result = parse_exclusions_from_text(text)
-        assert result == "excludes SE trim"
+        assert result == "SE trim"
     
     def test_no_exclusions(self):
         """Test handling text without exclusions."""
         text = "Tiguan $1,500"
         result = parse_exclusions_from_text(text)
         assert result is None
+    
+    def test_parse_complex_exclusions(self):
+        """Test parsing more complex exclusion patterns."""
+        # Multiple word exclusions
+        text = "Atlas $2,000 (excludes base trim and S model)"
+        result = parse_exclusions_from_text(text)
+        assert result == "base trim and S model"
+        
+        # Exclusions with punctuation
+        text = "Tiguan $1,500 (excludes: base, S, SE)"
+        result = parse_exclusions_from_text(text)
+        assert result == ": base, S, SE"
+    
+    def test_parse_mid_text_exclusions(self):
+        """Test parsing exclusions in middle of text."""
+        text = "All vehicles $1,000 (excludes base trim) available now"
+        result = parse_exclusions_from_text(text)
+        assert result == "base trim"
+    
+    def test_parse_exclude_singular_form(self):
+        """Test parsing 'exclude' (singular) form."""
+        text = "Atlas $2,000 (exclude base trim)"
+        result = parse_exclusions_from_text(text)
+        assert result == "base trim"
+    
+    def test_parse_exclusions_with_asterisk(self):
+        """Test parsing exclusions with asterisks or special markers."""
+        text = "Tiguan* $1,500 *excludes base trim"
+        result = parse_exclusions_from_text(text)
+        assert result == "base trim"
+    
+    def test_parse_exclusions_case_variations(self):
+        """Test parsing exclusions with different case variations."""
+        text = "Atlas $2,000 EXCLUDES base trim"
+        result = parse_exclusions_from_text(text)
+        assert result == "base trim"
+        
+        text = "Tiguan $1,500 (EXCLUDE Base Trim)"
+        result = parse_exclusions_from_text(text)
+        assert result == "Base Trim"
+    
+    def test_parse_exclusions_with_commas_and_lists(self):
+        """Test parsing exclusions that contain lists."""
+        text = "All models $2,000, excludes base trim, S model, and fleet sales"
+        result = parse_exclusions_from_text(text)
+        assert result == "base trim, S model, and fleet sales"
+    
+    def test_parse_exclusions_multiline_context(self):
+        """Test that exclusions work even with additional context."""
+        text = "MY25 Atlas Cross Sport excludes R-Line trim and base model configurations"
+        result = parse_exclusions_from_text(text)
+        assert result == "R-Line trim and base model configurations"
 
 
 class TestIsLabelText:
@@ -437,7 +489,7 @@ class TestExtractIntegration:
         
         assert len(result.kvs) == 1
         kv = result.kvs[0]
-        assert kv.exclusions == "(excludes base trim)"
+        assert kv.exclusions == "base trim"
     
     def test_extract_all_vehicles_context(self):
         """Test extraction with 'all vehicles' context."""
